@@ -27,13 +27,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 import os
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-key-only")
+SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-dev-key")
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -64,8 +64,9 @@ INSTALLED_APPS = [
 
 LOGIN_URL = "/admin/login/"
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -142,21 +143,17 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-import os
-
+# === Static files ===
 STATIC_URL = "/static/"
-
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
-]
-
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+# Só use STATICFILES_DIRS em desenvolvimento local
+if DEBUG:
+    STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
+
+# WhiteNoise (produção)
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 
 # settings.py (no final do arquivo)
 import ssl
@@ -183,16 +180,19 @@ class CustomEmailBackend(EmailBackend):
             return False
 
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 EMAIL_USE_TLS = True
 EMAIL_HOST = "smtp.gmail.com"  # Ou o servidor que estiver usando
 EMAIL_PORT = 587
 EMAIL_HOST_USER = "julioviana07@gmail.com"
-EMAIL_HOST_PASSWORD = "vktj pcpx tcwf qvnw"
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+
+DEFAULT_FROM_EMAIL = "Spaço da Jhuséna <no-reply@spaco.local>"
 
 ADMIN_MEDIA_PREFIX = "/static/admin/"
 
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+
 
 LOGGING = {
     "version": 1,
@@ -210,16 +210,17 @@ LOGGING = {
     },
 }
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
+# === Hosts (Render / Produção) ===
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS if h.strip()]
+
 
 # ========= Integrações externas =========
-TELEGRAM_BOT_TOKEN = (
-    "8229705100:AAEtRO291nZB9IxwKpUiFVWzbLXluXkivbk"  # trocar pelo token real do BotFather
-)
-TELEGRAM_CHAT_ID_DEFAULT = "6126423440"
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID_DEFAULT = os.getenv("TELEGRAM_CHAT_ID_DEFAULT", "")
 
 
 # === WhatsApp Cloud API ===
-WHATSAPP_CLOUD_TOKEN = "SEU_TOKEN_AQUI"
-WHATSAPP_PHONE_ID = "SEU_PHONE_ID_AQUI"  # ex: "123456789012345"
-WHATSAPP_TO_DEFAULT = "55DDDSEUNUMERO"  # ex: "5599999999999"
+WHATSAPP_CLOUD_TOKEN = os.getenv("WHATSAPP_CLOUD_TOKEN", "")
+WHATSAPP_PHONE_ID = os.getenv("WHATSAPP_PHONE_ID", "")
+WHATSAPP_TO_DEFAULT = os.getenv("WHATSAPP_TO_DEFAULT", "")
